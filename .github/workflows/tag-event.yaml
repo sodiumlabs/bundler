@@ -1,0 +1,17 @@
+name: Tag trigger Build docker image to Amazon ERC
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  tag-trigger-build-image:
+    uses: sodiumlabs/bundler/.github/workflows/buildx.yaml@main
+    with:
+      build_env: release
+    secrets:
+      aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      self_token: ${{ secrets.BOT_GITHUB_TOKEN }}
+
