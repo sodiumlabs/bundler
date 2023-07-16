@@ -23,4 +23,4 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: stackupwallet/stackup-bundler:latest
+          tags: stackupwallet/stackup-bundler:${{ github.sha }}
