@@ -230,7 +230,6 @@ func (r *Relayer) SendUserOperation() modules.BatchHandlerFunc {
 			estRev := []string{}
 			for len(ctx.Batch) > 0 {
 				est, revert, err := transaction.EstimateHandleOpsGas(&opts)
-
 				if err != nil {
 					return err
 				} else if revert != nil {
@@ -246,11 +245,13 @@ func (r *Relayer) SendUserOperation() modules.BatchHandlerFunc {
 					break
 				}
 			}
-			ctx.Data["relayer_est_revert_reasons"] = estRev
 
+			ctx.Data["relayer_est_revert_reasons"] = estRev
 			// Call handleOps() with gas estimate. Any userOps that cause a revert at this stage will be
 			// caught and dropped in the next iteration.
+
 			if len(ctx.Batch) > 0 {
+				r.logger.Info("handleOps", "batch", ctx.Batch)
 				if txn, err := transaction.HandleOps(&opts); err != nil {
 					return err
 				} else {

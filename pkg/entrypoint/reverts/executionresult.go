@@ -40,7 +40,13 @@ func NewExecutionResult(err error) (*ExecutionResultRevert, error) {
 		return nil, errors.New("executionResult: cannot assert type: error is not of type rpc.DataError")
 	}
 
-	data, ok := rpcErr.ErrorData().(string)
+	result, ok := rpcErr.ErrorData().(map[string]interface{})
+	if !ok {
+		return nil, errors.New("executionResult: cannot assert type: data is not of type map")
+	}
+
+	data, ok := result["data"].(string)
+
 	if !ok {
 		return nil, errors.New("executionResult: cannot assert type: data is not of type string")
 	}

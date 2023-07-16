@@ -63,6 +63,7 @@ func EstimateHandleOpsGas(opts *Opts) (gas uint64, revert *reverts.FailedOpRever
 		return 0, nil, err
 	}
 	auth.GasLimit = math.MaxUint64
+	auth.GasTipCap = opts.Tip
 	auth.NoSend = true
 
 	tx, err := ep.HandleOps(auth, toAbiType(opts.Batch), opts.Beneficiary)

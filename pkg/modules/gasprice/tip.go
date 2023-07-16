@@ -21,6 +21,17 @@ func NoopGetGasTipFunc() GetGasTipFunc {
 // GetGasTipWithEthClient returns a GetGasTipFunc using an eth client.
 func GetGasTipWithEthClient(eth *ethclient.Client) GetGasTipFunc {
 	return func() (*big.Int, error) {
+		chainId, err := eth.ChainID(context.Background())
+
+		if err != nil {
+			return nil, err
+		}
+
+		if chainId.Cmp(big.NewInt(31337)) == 0 {
+			// If we're on a local chain, we don't need to tip
+			return big.NewInt(10000000), nil
+		}
+
 		gt, err := eth.SuggestGasTipCap(context.Background())
 		if err != nil {
 			return nil, err

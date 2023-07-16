@@ -33,7 +33,17 @@ func NewFailedOp(err error) (*FailedOpRevert, error) {
 		)
 	}
 
-	data, ok := rpcErr.ErrorData().(string)
+	result, ok := rpcErr.ErrorData().(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf(
+			"failedOp: cannot assert type: data is not of type map, err: %s, data: %s",
+			rpcErr.Error(),
+			rpcErr.ErrorData(),
+		)
+	}
+
+	data, ok := result["data"].(string)
+
 	if !ok {
 		return nil, fmt.Errorf(
 			"failedOp: cannot assert type: data is not of type string, err: %s, data: %s",
@@ -45,7 +55,7 @@ func NewFailedOp(err error) (*FailedOpRevert, error) {
 	failedOp := failedOp()
 	revert, err := failedOp.Unpack(common.Hex2Bytes(data[2:]))
 	if err != nil {
-		return nil, fmt.Errorf("failedOp: %s", err)
+		return nil, fmt.Errorf("failedOp: %s, data: %s", err, data)
 	}
 
 	args, ok := revert.([]any)

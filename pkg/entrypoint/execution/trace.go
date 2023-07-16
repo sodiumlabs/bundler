@@ -28,6 +28,16 @@ func TraceSimulateHandleOp(
 	target common.Address,
 	data []byte,
 ) (*reverts.ExecutionResultRevert, error) {
+	if chainID.Cmp(big.NewInt(31337)) == 0 {
+		return SimulateHandleOp(
+			rpc,
+			entryPoint,
+			op,
+			target,
+			data,
+		)
+	}
+
 	ep, err := entrypoint.NewEntrypoint(entryPoint, ethclient.NewClient(rpc))
 	if err != nil {
 		return nil, err
@@ -37,6 +47,7 @@ func TraceSimulateHandleOp(
 		return nil, err
 	}
 	auth.GasLimit = math.MaxUint64
+	auth.GasTipCap = op.MaxPriorityFeePerGas
 	auth.NoSend = true
 	tx, err := ep.SimulateHandleOp(auth, entrypoint.UserOperation(*op), target, data)
 	if err != nil {
@@ -49,6 +60,7 @@ func TraceSimulateHandleOp(
 		To:   entryPoint,
 		Data: tx.Data(),
 	}
+
 	opts := utils.TraceCallOpts{
 		Tracer: customTracer,
 	}
