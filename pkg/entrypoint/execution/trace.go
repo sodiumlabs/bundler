@@ -28,6 +28,16 @@ func TraceSimulateHandleOp(
 	target common.Address,
 	data []byte,
 ) (*reverts.ExecutionResultRevert, error) {
+	if chainID.Cmp(big.NewInt(31337)) == 0 {
+		return SimulateHandleOp(
+			rpc,
+			entryPoint,
+			op,
+			target,
+			data,
+		)
+	}
+
 	ep, err := entrypoint.NewEntrypoint(entryPoint, ethclient.NewClient(rpc))
 	if err != nil {
 		return nil, err
