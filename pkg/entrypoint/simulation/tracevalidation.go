@@ -28,6 +28,10 @@ func TraceSimulateValidation(
 	chainID *big.Int,
 	stakes EntityStakes,
 ) ([]common.Address, error) {
+	if chainID.Cmp(big.NewInt(31337)) == 0 {
+		return make([]common.Address, 0), nil
+	}
+
 	ep, err := entrypoint.NewEntrypoint(entryPoint, ethclient.NewClient(rpc))
 	if err != nil {
 		return nil, err
