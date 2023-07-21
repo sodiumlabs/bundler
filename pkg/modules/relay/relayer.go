@@ -242,7 +242,7 @@ func (r *Relayer) SendUserOperation() modules.BatchHandlerFunc {
 						return err
 					}
 				} else {
-					opts.GasLimit = est + 1000000
+					opts.GasLimit = est + 1500000
 					break
 				}
 			}
