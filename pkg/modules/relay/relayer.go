@@ -87,7 +87,7 @@ func (r *Relayer) SendUserOperation() modules.BatchHandlerFunc {
 				ctx.MarkOpIndexForRemoval(revert.OpIndex)
 				estRev = append(estRev, revert.Reason)
 			} else {
-				opts.GasLimit = est + 100000
+				opts.GasLimit = est + 1500000
 				break
 			}
 		}
