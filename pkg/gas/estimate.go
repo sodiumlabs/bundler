@@ -203,3 +203,36 @@ func EstimateGas(in *EstimateInput) (verificationGas uint64, callGas uint64, err
 	}
 	return simOp.VerificationGasLimit.Uint64(), simOp.CallGasLimit.Uint64(), nil
 }
+
+func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint64, err error) {
+	// Skip if maxFeePerGas is zero.
+	if in.Op.MaxFeePerGas.Cmp(big.NewInt(0)) != 1 {
+		return 0, 0, errors.NewRPCError(
+			errors.INVALID_FIELDS,
+			"maxFeePerGas must be more than 0",
+			nil,
+		)
+	}
+
+	result, err := execution.SimulateHandleOp(
+		in.Rpc,
+		in.EntryPoint,
+		in.Op,
+		common.BigToAddress(big.NewInt(0)),
+		nil,
+	)
+
+	if err != nil {
+		return 0, 0, errors.NewRPCError(
+			errors.EXECUTION_REVERTED,
+			err.Error(),
+			nil,
+		)
+	}
+
+	// Calculate final values for verificationGasLimit and callGasLimit.
+	maxCalldataLimit := new(big.Int).Div(result.Paid, in.Op.MaxPriorityFeePerGas)
+	verificationGas = result.PreOpGas.Uint64()
+
+	return verificationGas, maxCalldataLimit.Uint64(), nil
+}
