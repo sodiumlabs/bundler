@@ -62,6 +62,24 @@ func GetGasEstimateWithEthClient(
 	}
 }
 
+func GetGasEstimateNoTraceWithEthClient(
+	rpc *rpc.Client,
+	ov *gas.Overhead,
+	chain *big.Int,
+	maxGasLimit *big.Int,
+) GetGasEstimateFunc {
+	return func(ep common.Address, op *userop.UserOperation) (verificationGas uint64, callGas uint64, err error) {
+		return gas.EstimateGasNoTrace(&gas.EstimateInput{
+			Rpc:         rpc,
+			EntryPoint:  ep,
+			Op:          op,
+			Ov:          ov,
+			ChainID:     chain,
+			MaxGasLimit: maxGasLimit,
+		})
+	}
+}
+
 // GetUserOpByHashFunc is a general interface for fetching a UserOperation given a userOpHash, EntryPoint
 // address, and chain ID.
 type GetUserOpByHashFunc func(hash string, ep common.Address, chain *big.Int) (*filter.HashLookupResult, error)
