@@ -214,6 +214,8 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
+	in.Op.CallGasLimit = in.MaxGasLimit
+
 	result, err := execution.SimulateHandleOp(
 		in.Rpc,
 		in.EntryPoint,
@@ -231,7 +233,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 	}
 
 	// Calculate final values for verificationGasLimit and callGasLimit.
-	maxCalldataLimit := new(big.Int).Div(result.Paid, in.Op.MaxPriorityFeePerGas)
+	maxCalldataLimit := new(big.Int).Div(new(big.Int).Mul(result.Paid, big.NewInt(2)), in.Op.MaxPriorityFeePerGas)
 	verificationGas = result.PreOpGas.Uint64()
 
 	return verificationGas, maxCalldataLimit.Uint64(), nil

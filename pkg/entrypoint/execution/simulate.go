@@ -38,6 +38,10 @@ func SimulateHandleOp(
 		data,
 	)
 
+	// ethClient := ethclient.NewClient(rpc)
+
+	// ethClient.CallContract()
+
 	sim, simErr := reverts.NewExecutionResult(err)
 	if simErr != nil {
 		fo, foErr := reverts.NewFailedOp(err)
