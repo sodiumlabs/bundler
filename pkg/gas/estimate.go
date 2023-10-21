@@ -214,6 +214,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
+	in.Op.VerificationGasLimit = in.MaxGasLimit
 	in.Op.CallGasLimit = in.MaxGasLimit
 
 	// if wallet inited
