@@ -216,6 +216,9 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 
 	in.Op.CallGasLimit = in.MaxGasLimit
 
+	// if wallet inited
+	// eth_estimateGas with maxFeePerGas
+	// if error is not "AA21" or "AA31"
 	result, err := execution.SimulateHandleOp(
 		in.Rpc,
 		in.EntryPoint,
@@ -230,6 +233,12 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 			err.Error(),
 			nil,
 		)
+	}
+
+	// if zero as 0.1 default
+	if in.Op.MaxPriorityFeePerGas.Cmp(big.NewInt(0)) == 0 {
+		// 0.1 gwei
+		in.Op.MaxPriorityFeePerGas = big.NewInt(100000000)
 	}
 
 	// Calculate final values for verificationGasLimit and callGasLimit.
