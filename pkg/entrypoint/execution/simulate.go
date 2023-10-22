@@ -38,7 +38,11 @@ func SimulateHandleOp(
 	if simErr != nil {
 		fo, foErr := reverts.NewFailedOp(err)
 		if foErr != nil {
-			return nil, fmt.Errorf("%s, %s", simErr, foErr)
+			fs, fsErr := reverts.NewFailedStr(err)
+			if fsErr != nil {
+				return nil, fmt.Errorf("%s, %s, %s", simErr, foErr, fsErr)
+			}
+			return nil, errors.NewRPCError(errors.REJECTED_BY_EP_OR_ACCOUNT, fs.Reason, fs)
 		}
 		return nil, errors.NewRPCError(errors.REJECTED_BY_EP_OR_ACCOUNT, fo.Reason, fo)
 	}
