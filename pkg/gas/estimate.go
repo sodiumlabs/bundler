@@ -1,12 +1,14 @@
 package gas
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/stackup-wallet/stackup-bundler/internal/config"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/execution"
 	"github.com/stackup-wallet/stackup-bundler/pkg/errors"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
@@ -17,11 +19,18 @@ var (
 )
 
 func isPrefundNotPaid(err error) bool {
-	return strings.HasPrefix(err.Error(), "AA21") || strings.HasPrefix(err.Error(), "AA31")
+	return strings.HasPrefix(err.Error(), "AA21") ||
+		strings.HasPrefix(err.Error(), "AA31") ||
+		strings.Contains(err.Error(), "balance too low")
 }
 
 func isValidationOOG(err error) bool {
-	return strings.HasPrefix(err.Error(), "AA13") || strings.Contains(err.Error(), "validation OOG")
+	return strings.HasPrefix(err.Error(), "AA13") ||
+		strings.Contains(err.Error(), "validation OOG") ||
+		strings.HasPrefix(err.Error(), "AA23") ||
+		strings.Contains(err.Error(), "AA33 reverted (or OOG)") ||
+		strings.HasPrefix(err.Error(), "AA40") ||
+		strings.HasPrefix(err.Error(), "AA41")
 }
 
 func isExecutionOOG(err error) bool {
@@ -214,13 +223,20 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
-	in.Op.VerificationGasLimit = in.MaxGasLimit
-	in.Op.CallGasLimit = in.MaxGasLimit
+	maxVerificationGasLimit := config.GetValues().MaxVerificationGas.Uint64()
+	maxCallDataLimit := config.GetValues().MaxBatchGasLimit.Uint64()
+
+	verificationGas = 90000
+	callGas = 600000
+
+	//
+	in.Op.VerificationGasLimit = big.NewInt(0).SetUint64(verificationGas)
+	in.Op.CallGasLimit = big.NewInt(0).SetUint64(callGas)
 
 	// if wallet inited
 	// eth_estimateGas with maxFeePerGas
 	// if error is not "AA21" or "AA31"
-	result, err := execution.SimulateHandleOp(
+	_, err = execution.SimulateHandleOp(
 		in.Rpc,
 		in.EntryPoint,
 		in.Op,
@@ -228,23 +244,64 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		nil,
 	)
 
+	if err != nil && isValidationOOG(err) {
+		for {
+			// if error is "AA21" or "AA31"
+			verificationGas = verificationGas + 10000
+			in.Op.VerificationGasLimit = big.NewInt(0).SetUint64(verificationGas)
+			_, err = execution.SimulateHandleOp(
+				in.Rpc,
+				in.EntryPoint,
+				in.Op,
+				common.BigToAddress(big.NewInt(0)),
+				nil,
+			)
+			if err == nil {
+				break
+			} else if !isValidationOOG(err) {
+				break
+			} else if verificationGas >= maxVerificationGasLimit {
+				return 0, 0, errors.NewRPCError(
+					errors.INVALID_FIELDS,
+					fmt.Errorf("verificationGasLimit is too high, max is %d, err: %v", maxVerificationGasLimit, err).Error(),
+					nil,
+				)
+			}
+		}
+	}
+
+	if err != nil && isPrefundNotPaid(err) {
+		for {
+			callGas = callGas - 100000
+			in.Op.CallGasLimit = big.NewInt(0).SetUint64(callGas)
+			_, err = execution.SimulateHandleOp(
+				in.Rpc,
+				in.EntryPoint,
+				in.Op,
+				common.BigToAddress(big.NewInt(0)),
+				nil,
+			)
+			if err == nil {
+				break
+			} else if !isPrefundNotPaid(err) {
+				break
+			} else if callGas >= maxCallDataLimit {
+				return 0, 0, errors.NewRPCError(
+					errors.INVALID_FIELDS,
+					fmt.Errorf("callGasLimit is too high, max is %d, err: %v", maxCallDataLimit, err).Error(),
+					nil,
+				)
+			}
+		}
+	}
+
 	if err != nil {
 		return 0, 0, errors.NewRPCError(
-			errors.EXECUTION_REVERTED,
-			err.Error(),
+			errors.INVALID_FIELDS,
+			fmt.Errorf("gas failed %v, vGasLimit: %d", err, verificationGas).Error(),
 			nil,
 		)
 	}
 
-	// if zero as 0.1 default
-	if in.Op.MaxPriorityFeePerGas.Cmp(big.NewInt(0)) == 0 {
-		// 0.1 gwei
-		in.Op.MaxPriorityFeePerGas = big.NewInt(100000000)
-	}
-
-	// Calculate final values for verificationGasLimit and callGasLimit.
-	maxCalldataLimit := new(big.Int).Div(result.Paid, in.Op.MaxPriorityFeePerGas)
-	verificationGas = result.PreOpGas.Uint64()
-
-	return verificationGas, maxCalldataLimit.Uint64() + 35000, nil
+	return verificationGas, callGas, nil
 }

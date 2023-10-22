@@ -2,7 +2,6 @@ package execution
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -25,9 +24,6 @@ func SimulateHandleOp(
 		return nil, err
 	}
 
-	// fmt.Println("VerificationGasLimit", op.VerificationGasLimit)
-	op.VerificationGasLimit = big.NewInt(400000)
-
 	rawCaller := &entrypoint.EntrypointRaw{Contract: ep}
 	err = rawCaller.Call(
 		nil,
@@ -37,10 +33,6 @@ func SimulateHandleOp(
 		target,
 		data,
 	)
-
-	// ethClient := ethclient.NewClient(rpc)
-
-	// ethClient.CallContract()
 
 	sim, simErr := reverts.NewExecutionResult(err)
 	if simErr != nil {
