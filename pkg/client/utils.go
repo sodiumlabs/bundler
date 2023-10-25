@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/filter"
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
+	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
@@ -63,6 +64,7 @@ func GetGasEstimateWithEthClient(
 }
 
 func GetGasEstimateNoTraceWithEthClient(
+	eoa *signer.EOA,
 	rpc *rpc.Client,
 	ov *gas.Overhead,
 	chain *big.Int,
@@ -76,6 +78,7 @@ func GetGasEstimateNoTraceWithEthClient(
 			Ov:          ov,
 			ChainID:     chain,
 			MaxGasLimit: maxGasLimit,
+			Signer:      eoa,
 		})
 	}
 }

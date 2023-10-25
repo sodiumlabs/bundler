@@ -11,6 +11,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/internal/config"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/execution"
 	"github.com/stackup-wallet/stackup-bundler/pkg/errors"
+	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
@@ -48,6 +49,7 @@ type EstimateInput struct {
 	Ov          *Overhead
 	ChainID     *big.Int
 	MaxGasLimit *big.Int
+	Signer      *signer.EOA
 }
 
 // EstimateGas uses the simulateHandleOp method on the EntryPoint to derive an estimate for
@@ -237,6 +239,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 	// eth_estimateGas with maxFeePerGas
 	// if error is not "AA21" or "AA31"
 	_, err = execution.SimulateHandleOp(
+		in.Signer,
 		in.Rpc,
 		in.EntryPoint,
 		in.Op,
@@ -250,6 +253,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 			verificationGas = verificationGas + 10000
 			in.Op.VerificationGasLimit = big.NewInt(0).SetUint64(verificationGas)
 			_, err = execution.SimulateHandleOp(
+				in.Signer,
 				in.Rpc,
 				in.EntryPoint,
 				in.Op,
@@ -275,6 +279,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 			callGas = callGas - 100000
 			in.Op.CallGasLimit = big.NewInt(0).SetUint64(callGas)
 			_, err = execution.SimulateHandleOp(
+				in.Signer,
 				in.Rpc,
 				in.EntryPoint,
 				in.Op,

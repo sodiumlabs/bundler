@@ -3,16 +3,19 @@ package execution
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/reverts"
 	"github.com/stackup-wallet/stackup-bundler/pkg/errors"
+	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
 func SimulateHandleOp(
+	eoa *signer.EOA,
 	rpc *rpc.Client,
 	entryPoint common.Address,
 	op *userop.UserOperation,
@@ -26,7 +29,9 @@ func SimulateHandleOp(
 
 	rawCaller := &entrypoint.EntrypointRaw{Contract: ep}
 	err = rawCaller.Call(
-		nil,
+		&bind.CallOpts{
+			From: eoa.Address,
+		},
 		nil,
 		"simulateHandleOp",
 		entrypoint.UserOperation(*op),
