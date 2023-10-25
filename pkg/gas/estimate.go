@@ -227,7 +227,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 	maxCallDataLimit := config.GetValues().MaxBatchGasLimit.Uint64()
 
 	verificationGas = 90000
-	callGas = 600000
+	callGas = 1000000
 
 	//
 	in.Op.VerificationGasLimit = big.NewInt(0).SetUint64(verificationGas)
