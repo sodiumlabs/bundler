@@ -4,12 +4,14 @@ import (
 	stdError "errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/reverts"
 	"github.com/stackup-wallet/stackup-bundler/pkg/errors"
+	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 )
 
@@ -19,6 +21,7 @@ func SimulateValidation(
 	rpc *rpc.Client,
 	entryPoint common.Address,
 	op *userop.UserOperation,
+	signer *signer.EOA,
 ) (*reverts.ValidationResultRevert, error) {
 	ep, err := entrypoint.NewEntrypoint(entryPoint, ethclient.NewClient(rpc))
 	if err != nil {
@@ -27,7 +30,9 @@ func SimulateValidation(
 
 	var res []interface{}
 	rawCaller := &entrypoint.EntrypointRaw{Contract: ep}
-	err = rawCaller.Call(nil, &res, "simulateValidation", entrypoint.UserOperation(*op))
+	err = rawCaller.Call(&bind.CallOpts{
+		From: signer.Address,
+	}, &res, "simulateValidation", entrypoint.UserOperation(*op))
 	if err == nil {
 		return nil, stdError.New("unexpected result from simulateValidation")
 	}

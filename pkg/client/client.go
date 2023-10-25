@@ -125,7 +125,7 @@ func (i *Client) SendUserOperation(op map[string]any, ep string) (string, error)
 	// Run through client module stack.
 	ctx := modules.NewUserOpHandlerContext(userOp, penOps, epAddr, i.chainID)
 	if err := i.userOpHandler(ctx); err != nil {
-		l.Error(err, "eth_sendUserOperation error")
+		l.Error(err, "eth_sendUserOperation userOphandler error")
 		return "", err
 	}
 

@@ -312,5 +312,5 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		callGas -= 500000
 	}
 
-	return verificationGas - 30000, callGas, nil
+	return verificationGas, callGas, nil
 }

@@ -76,6 +76,7 @@ func (r *Relayer) SendUserOperation() modules.BatchHandlerFunc {
 			GasLimit:    0,
 			WaitTimeout: r.waitTimeout,
 		}
+		r.logger.Info("Sending batch to EntryPoint")
 		// Estimate gas for handleOps() and drop all userOps that cause unexpected reverts.
 		estRev := []string{}
 		for len(ctx.Batch) > 0 {

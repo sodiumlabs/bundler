@@ -4,6 +4,7 @@ import (
 	bytesPkg "bytes"
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -70,6 +71,8 @@ func EstimateHandleOpsGas(opts *Opts) (gas uint64, revert *reverts.FailedOpRever
 		return 0, nil, err
 	}
 
+	fmt.Println("start estimate gas")
+
 	est, err := opts.Eth.EstimateGas(context.Background(), ethereum.CallMsg{
 		From:       opts.EOA.Address,
 		To:         tx.To(),
@@ -81,13 +84,17 @@ func EstimateHandleOpsGas(opts *Opts) (gas uint64, revert *reverts.FailedOpRever
 		Data:       tx.Data(),
 		AccessList: tx.AccessList(),
 	})
+
 	if err != nil {
+		fmt.Println("start estimate error")
 		revert, err := reverts.NewFailedOp(err)
 		if err != nil {
 			return 0, nil, err
 		}
 		return 0, revert, nil
 	}
+
+	fmt.Println("start estimate done")
 
 	return est, nil, nil
 }

@@ -106,6 +106,7 @@ func PrivateMode() {
 		conf.MaxVerificationGas,
 		conf.MaxBatchGasLimit,
 		conf.MaxOpsForUnstakedSender,
+		eoa,
 	)
 
 	exp := expire.New(conf.MaxOpTTL)

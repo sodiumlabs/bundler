@@ -16,6 +16,7 @@ import (
 	"github.com/stackup-wallet/stackup-bundler/pkg/gas"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules"
 	"github.com/stackup-wallet/stackup-bundler/pkg/modules/gasprice"
+	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
 	"golang.org/x/sync/errgroup"
 )
@@ -31,6 +32,7 @@ type Standalone struct {
 	maxVerificationGas      *big.Int
 	maxBatchGasLimit        *big.Int
 	maxOpsForUnstakedSender int
+	signer                  *signer.EOA
 }
 
 // New returns a Standalone instance with methods that can be used in Client and Bundler modules to perform
@@ -42,9 +44,10 @@ func New(
 	maxVerificationGas *big.Int,
 	maxBatchGasLimit *big.Int,
 	maxOpsForUnstakedSender int,
+	signer *signer.EOA,
 ) *Standalone {
 	eth := ethclient.NewClient(rpc)
-	return &Standalone{db, rpc, eth, ov, maxVerificationGas, maxBatchGasLimit, maxOpsForUnstakedSender}
+	return &Standalone{db, rpc, eth, ov, maxVerificationGas, maxBatchGasLimit, maxOpsForUnstakedSender, signer}
 }
 
 // ValidateOpValues returns a UserOpHandler that runs through some first line sanity checks for new UserOps
@@ -82,7 +85,7 @@ func (s *Standalone) SimulateOp() modules.UserOpHandlerFunc {
 		gc := getCodeWithEthClient(s.eth)
 		g := new(errgroup.Group)
 		g.Go(func() error {
-			sim, err := simulation.SimulateValidation(s.rpc, ctx.EntryPoint, ctx.UserOp)
+			sim, err := simulation.SimulateValidation(s.rpc, ctx.EntryPoint, ctx.UserOp, s.signer)
 
 			if err != nil {
 				return errors.NewRPCError(errors.REJECTED_BY_EP_OR_ACCOUNT, err.Error(), err.Error())
