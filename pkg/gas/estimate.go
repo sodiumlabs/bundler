@@ -227,12 +227,6 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 	maxCallDataLimit := config.GetValues().MaxBatchGasLimit.Uint64()
 
 	verificationGas = 90000
-	var verificationAdded uint64 = 10000
-	if in.Op.Nonce.Cmp(big.NewInt(0)) == 0 {
-		verificationGas = 90000 * 3
-		verificationAdded = 30000
-	}
-
 	callGas = 600000
 
 	//
@@ -253,7 +247,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 	if err != nil && isValidationOOG(err) {
 		for {
 			// if error is "AA21" or "AA31"
-			verificationGas = verificationGas + verificationAdded
+			verificationGas = verificationGas + 10000
 			in.Op.VerificationGasLimit = big.NewInt(0).SetUint64(verificationGas)
 			_, err = execution.SimulateHandleOp(
 				in.Rpc,
@@ -309,5 +303,9 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
-	return verificationGas, callGas, nil
+	if callGas > 500000 {
+		callGas -= 500000
+	}
+
+	return verificationGas - 30000, callGas, nil
 }
