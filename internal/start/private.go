@@ -118,7 +118,14 @@ func PrivateMode() {
 	// Init Client
 	c := client.New(mem, ov, chain, conf.SupportedEntryPoints)
 	c.SetGetUserOpReceiptFunc(client.GetUserOpReceiptWithEthClient(eth))
-	c.SetGetGasEstimateFunc(client.GetGasEstimateNoTraceWithEthClient(eoa, rpc, ov, chain, conf.MaxBatchGasLimit))
+	c.SetGetGasEstimateFunc(client.GetGasEstimateNoTraceWithEthClient(
+		eoa,
+		rpc,
+		ov,
+		chain,
+		conf.MaxBatchGasLimit,
+		conf.MaxVerificationGas,
+	))
 	// c.SetGetGasEstimateFunc(client.GetGasEstimateWithEthClient(rpc, ov, chain, conf.MaxBatchGasLimit))
 	c.SetGetUserOpByHashFunc(client.GetUserOpByHashWithEthClient(eth))
 	c.UseLogger(logr)

@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/stackup-wallet/stackup-bundler/internal/config"
 	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/execution"
+	"github.com/stackup-wallet/stackup-bundler/pkg/entrypoint/simulation"
 	"github.com/stackup-wallet/stackup-bundler/pkg/errors"
 	"github.com/stackup-wallet/stackup-bundler/pkg/signer"
 	"github.com/stackup-wallet/stackup-bundler/pkg/userop"
@@ -43,13 +43,14 @@ func isExecutionReverted(err error) bool {
 }
 
 type EstimateInput struct {
-	Rpc         *rpc.Client
-	EntryPoint  common.Address
-	Op          *userop.UserOperation
-	Ov          *Overhead
-	ChainID     *big.Int
-	MaxGasLimit *big.Int
-	Signer      *signer.EOA
+	Rpc                  *rpc.Client
+	EntryPoint           common.Address
+	Op                   *userop.UserOperation
+	Ov                   *Overhead
+	ChainID              *big.Int
+	MaxGasLimit          *big.Int
+	VerificationGasLimit *big.Int
+	Signer               *signer.EOA
 }
 
 // EstimateGas uses the simulateHandleOp method on the EntryPoint to derive an estimate for
@@ -215,6 +216,20 @@ func EstimateGas(in *EstimateInput) (verificationGas uint64, callGas uint64, err
 	return simOp.VerificationGasLimit.Uint64(), simOp.CallGasLimit.Uint64(), nil
 }
 
+// const estimateCreationGas = async (
+//
+//	provider: ethers.providers.JsonRpcProvider,
+//	initCode: ethers.BytesLike
+//
+//	): Promise<ethers.BigNumber> => {
+//	    const initCodeHex = ethers.utils.hexlify(initCode);
+//	    const factory = initCodeHex.substring(0, 42);
+//	    const callData = "0x" + initCodeHex.substring(42);
+//	    return await provider.estimateGas({
+//	        to: factory,
+//	        data: callData,
+//	    });
+//	};
 func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint64, err error) {
 	// Skip if maxFeePerGas is zero.
 	if in.Op.MaxFeePerGas.Cmp(big.NewInt(0)) != 1 {
@@ -225,21 +240,30 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
-	maxVerificationGasLimit := config.GetValues().MaxVerificationGas.Uint64()
-	maxCallDataLimit := config.GetValues().MaxBatchGasLimit.Uint64()
+	walletCreationGas, err := execution.EstimateCreationGas(in.Signer, in.Rpc, in.Op)
 
-	verificationGas = 90000
-	callGas = 1000000
+	if err != nil {
+		return 0, 0, errors.NewRPCError(
+			errors.INVALID_FIELDS,
+			fmt.Errorf("estimate creation gas failed: %v", err).Error(),
+			nil,
+		)
+	}
 
-	//
+	maxVerificationGasLimit := in.VerificationGasLimit.Uint64()
+	verificationGas = 80000 + walletCreationGas
+
 	in.Op.VerificationGasLimit = big.NewInt(0).SetUint64(verificationGas)
-	in.Op.CallGasLimit = big.NewInt(0).SetUint64(callGas)
+	in.Op.CallGasLimit = in.MaxGasLimit
+
+	times := 0
 
 	// if wallet inited
 	// eth_estimateGas with maxFeePerGas
 	// if error is not "AA21" or "AA31"
 	_, err = execution.SimulateHandleOp(
 		in.Signer,
+		in.ChainID,
 		in.Rpc,
 		in.EntryPoint,
 		in.Op,
@@ -247,19 +271,21 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		nil,
 	)
 
+	times += 1
 	if err != nil && isValidationOOG(err) {
 		for {
-			// if error is "AA21" or "AA31"
 			verificationGas = verificationGas + 10000
 			in.Op.VerificationGasLimit = big.NewInt(0).SetUint64(verificationGas)
 			_, err = execution.SimulateHandleOp(
 				in.Signer,
+				in.ChainID,
 				in.Rpc,
 				in.EntryPoint,
 				in.Op,
 				common.BigToAddress(big.NewInt(0)),
 				nil,
 			)
+			times += 1
 			if err == nil {
 				break
 			} else if !isValidationOOG(err) {
@@ -274,26 +300,23 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		}
 	}
 
-	if err != nil && isPrefundNotPaid(err) {
+	// estimate verification gas
+	_, err = simulation.SimulateValidation(in.Rpc, in.EntryPoint, in.Op, in.Signer)
+	times += 1
+	if err != nil && isValidationOOG(err) {
 		for {
-			callGas = callGas - 100000
-			in.Op.CallGasLimit = big.NewInt(0).SetUint64(callGas)
-			_, err = execution.SimulateHandleOp(
-				in.Signer,
-				in.Rpc,
-				in.EntryPoint,
-				in.Op,
-				common.BigToAddress(big.NewInt(0)),
-				nil,
-			)
+			verificationGas = verificationGas + 10000
+			in.Op.VerificationGasLimit = big.NewInt(0).SetUint64(verificationGas)
+			_, err = simulation.SimulateValidation(in.Rpc, in.EntryPoint, in.Op, in.Signer)
+			times += 1
 			if err == nil {
 				break
-			} else if !isPrefundNotPaid(err) {
+			} else if !isValidationOOG(err) {
 				break
-			} else if callGas >= maxCallDataLimit {
+			} else if verificationGas >= maxVerificationGasLimit {
 				return 0, 0, errors.NewRPCError(
 					errors.INVALID_FIELDS,
-					fmt.Errorf("callGasLimit is too high, max is %d, err: %v", maxCallDataLimit, err).Error(),
+					fmt.Errorf("verificationGasLimit is too high, max is %d, err: %v", maxVerificationGasLimit, err).Error(),
 					nil,
 				)
 			}
@@ -308,8 +331,34 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
-	if callGas > 500000 {
-		callGas -= 500000
+	ev, err := execution.SimulateHandleOp(
+		in.Signer,
+		in.ChainID,
+		in.Rpc,
+		in.EntryPoint,
+		in.Op,
+		common.BigToAddress(big.NewInt(0)),
+		nil,
+	)
+
+	times += 1
+
+	if err != nil {
+		return 0, 0, errors.NewRPCError(
+			errors.INVALID_FIELDS,
+			fmt.Errorf("gas failed %v, vGasLimit: %d", err, verificationGas).Error(),
+			nil,
+		)
+	}
+
+	fmt.Println("times: ", times)
+
+	callGasLimit := big.NewInt(0).Sub(ev.Paid, in.Op.PreVerificationGas)
+	callGasLimit = new(big.Int).Sub(callGasLimit, in.Op.VerificationGasLimit)
+	callGas = callGasLimit.Uint64()
+
+	if len(in.Op.PaymasterAndData) != 0 {
+		verificationGas = (verificationGas-walletCreationGas)*3 + walletCreationGas
 	}
 
 	return verificationGas, callGas, nil

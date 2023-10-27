@@ -69,16 +69,18 @@ func GetGasEstimateNoTraceWithEthClient(
 	ov *gas.Overhead,
 	chain *big.Int,
 	maxGasLimit *big.Int,
+	verificationGasLimit *big.Int,
 ) GetGasEstimateFunc {
 	return func(ep common.Address, op *userop.UserOperation) (verificationGas uint64, callGas uint64, err error) {
 		return gas.EstimateGasNoTrace(&gas.EstimateInput{
-			Rpc:         rpc,
-			EntryPoint:  ep,
-			Op:          op,
-			Ov:          ov,
-			ChainID:     chain,
-			MaxGasLimit: maxGasLimit,
-			Signer:      eoa,
+			Rpc:                  rpc,
+			EntryPoint:           ep,
+			Op:                   op,
+			Ov:                   ov,
+			ChainID:              chain,
+			MaxGasLimit:          maxGasLimit,
+			VerificationGasLimit: verificationGasLimit,
+			Signer:               eoa,
 		})
 	}
 }
