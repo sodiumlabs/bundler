@@ -361,5 +361,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		verificationGas = (verificationGas-walletCreationGas)*3 + walletCreationGas
 	}
 
-	return verificationGas, callGas, nil
+	// 5% of callGas
+
+	return verificationGas, callGas * 105 / 100, nil
 }
