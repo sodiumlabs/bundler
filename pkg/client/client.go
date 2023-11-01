@@ -165,13 +165,6 @@ func (i *Client) EstimateUserOperationGas(op map[string]any, ep string) (*gas.Ga
 	hash := userOp.GetUserOpHash(epAddr, i.chainID)
 	l = l.WithValues("userop_hash", hash)
 
-	// Estimate gas limits
-	vg, cg, err := i.getGasEstimate(epAddr, userOp)
-	if err != nil {
-		l.Error(err, "eth_estimateUserOperationGas error")
-		return nil, err
-	}
-
 	// Calculate PreVerificationGas
 	pvg, err := i.ov.CalcPreVerificationGasWithBuffer(userOp)
 	if err != nil {
@@ -179,9 +172,22 @@ func (i *Client) EstimateUserOperationGas(op map[string]any, ep string) (*gas.Ga
 		return nil, err
 	}
 
+	if len(userOp.Signature) == 0 {
+		pvg = new(big.Int).Add(pvg, big.NewInt(8000))
+	}
+
+	userOp.PreVerificationGas = pvg
+
+	// Estimate gas limits
+	vg, cg, err := i.getGasEstimate(epAddr, userOp)
+	if err != nil {
+		l.Error(err, "eth_estimateUserOperationGas error")
+		return nil, err
+	}
+
 	l.Info("eth_estimateUserOperationGas ok")
 	return &gas.GasEstimates{
-		PreVerificationGas:   big.NewInt(0).Sub(pvg, big.NewInt(30000)),
+		PreVerificationGas:   pvg,
 		VerificationGasLimit: big.NewInt(int64(vg)),
 		CallGasLimit:         big.NewInt(int64(cg)),
 

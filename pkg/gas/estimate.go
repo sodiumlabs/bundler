@@ -240,7 +240,12 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
-	walletCreationGas, err := execution.EstimateCreationGas(in.Signer, in.Rpc, in.Op)
+	walletCreationGas, err := execution.EstimateCreationGas(
+		in.Signer,
+		in.Rpc,
+		in.Op,
+		in.MaxGasLimit,
+	)
 
 	if err != nil {
 		return 0, 0, errors.NewRPCError(
@@ -269,6 +274,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		in.Op,
 		common.BigToAddress(big.NewInt(0)),
 		nil,
+		in.MaxGasLimit,
 	)
 
 	times += 1
@@ -284,6 +290,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 				in.Op,
 				common.BigToAddress(big.NewInt(0)),
 				nil,
+				in.MaxGasLimit,
 			)
 			times += 1
 			if err == nil {
@@ -339,6 +346,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		in.Op,
 		common.BigToAddress(big.NewInt(0)),
 		nil,
+		in.MaxGasLimit,
 	)
 
 	times += 1
@@ -351,7 +359,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
-	fmt.Println("times: ", times)
+	fmt.Println("times: ", times, in.Op.PreVerificationGas)
 
 	callGasLimit := big.NewInt(0).Sub(ev.Paid, in.Op.PreVerificationGas)
 	callGasLimit = new(big.Int).Sub(callGasLimit, in.Op.VerificationGasLimit)

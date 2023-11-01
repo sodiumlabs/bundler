@@ -26,6 +26,7 @@ func SimulateHandleOp(
 	op *userop.UserOperation,
 	target common.Address,
 	data []byte,
+	maxGasLimit *big.Int,
 ) (*reverts.ExecutionResultRevert, error) {
 	ethClient := ethclient.NewClient(rpc)
 	ep, err := entrypoint.NewEntrypoint(entryPoint, ethClient)
@@ -48,17 +49,17 @@ func SimulateHandleOp(
 		return nil, err
 	}
 
-	_, err = ethClient.EstimateGas(context.Background(), ethereum.CallMsg{
+	_, err = ethClient.CallContract(context.Background(), ethereum.CallMsg{
 		From:       signer.Address,
 		To:         tx.To(),
 		Gas:        tx.Gas(),
-		GasPrice:   tx.GasPrice(),
-		GasFeeCap:  tx.GasFeeCap(),
-		GasTipCap:  tx.GasTipCap(),
-		Value:      tx.Value(),
+		GasPrice:   nil,
+		GasFeeCap:  nil,
+		GasTipCap:  nil,
+		Value:      big.NewInt(0),
 		Data:       tx.Data(),
 		AccessList: tx.AccessList(),
-	})
+	}, nil)
 
 	sim, simErr := reverts.NewExecutionResult(err)
 	if simErr != nil {
@@ -80,6 +81,7 @@ func EstimateCreationGas(
 	signer *signer.EOA,
 	rpc *rpc.Client,
 	op *userop.UserOperation,
+	maxGasLimit *big.Int,
 ) (uint64, error) {
 	// if wallet inited
 	if len(op.InitCode) == 0 {

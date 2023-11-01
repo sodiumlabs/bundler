@@ -24,7 +24,7 @@ func ValidateVerificationGas(op *userop.UserOperation, ov *gas.Overhead, maxVeri
 		return err
 	}
 	if op.PreVerificationGas.Cmp(pvg) < 0 {
-		return fmt.Errorf("preVerificationGas: below expected gas of %s", pvg.String())
+		return fmt.Errorf("preVerificationGas: below expected gas of %s:%s", pvg.String(), op.PreVerificationGas.String())
 	}
 
 	return nil
