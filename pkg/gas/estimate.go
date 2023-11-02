@@ -361,8 +361,7 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 
 	fmt.Println("times: ", times, in.Op.PreVerificationGas)
 
-	callGasLimit := big.NewInt(0).Sub(ev.Paid, in.Op.PreVerificationGas)
-	callGasLimit = new(big.Int).Sub(callGasLimit, in.Op.VerificationGasLimit)
+	callGasLimit := big.NewInt(0).Sub(ev.Paid, ev.PreOpGas)
 	callGas = callGasLimit.Uint64()
 
 	if len(in.Op.PaymasterAndData) != 0 {
