@@ -359,16 +359,15 @@ func EstimateGasNoTrace(in *EstimateInput) (verificationGas uint64, callGas uint
 		)
 	}
 
-	fmt.Println("times: ", times, in.Op.PreVerificationGas)
-
 	callGasLimit := big.NewInt(0).Sub(ev.Paid, ev.PreOpGas)
 	callGas = callGasLimit.Uint64()
 
-	if len(in.Op.PaymasterAndData) != 0 {
+	if len(in.Op.PaymasterAndData) > 0 {
+		fmt.Println("has paymaster")
 		verificationGas = (verificationGas-walletCreationGas)*3 + walletCreationGas
+	} else {
+		fmt.Println("not paymaster", verificationGas, callGas, callGas, ev.Paid, ev.PreOpGas)
 	}
 
-	// 5% of callGas
-
-	return verificationGas, callGas * 110 / 100, nil
+	return verificationGas, callGas * 130 / 100, nil
 }
