@@ -6,6 +6,7 @@ var (
 	EthereumChainID       = big.NewInt(1)
 	GoerliChainID         = big.NewInt(5)
 	ArbitrumOneChainID    = big.NewInt(42161)
+	LumiterraChainID      = big.NewInt(94168)
 	ArbitrumGoerliChainID = big.NewInt(421613)
 	OptimismChainID       = big.NewInt(10)
 	OptimismGoerliChainID = big.NewInt(420)
