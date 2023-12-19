@@ -176,6 +176,10 @@ func SearcherMode() {
 	r.GET("/ping", func(g *gin.Context) {
 		g.Status(http.StatusOK)
 	})
+	r.GET("/check", func(g *gin.Context) {
+		g.Writer.Write([]byte("OK"))
+		g.Status(http.StatusOK)
+	})
 	handlers := []gin.HandlerFunc{
 		jsonrpc.Controller(client.NewRpcAdapter(c, d)),
 		jsonrpc.WithOTELTracerAttributes(),

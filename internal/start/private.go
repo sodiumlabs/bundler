@@ -186,6 +186,10 @@ func PrivateMode() {
 	r.GET("/ping", func(g *gin.Context) {
 		g.Status(http.StatusOK)
 	})
+	r.GET("/check", func(g *gin.Context) {
+		g.Writer.Write([]byte("Welcome EIP-4337"))
+		g.Status(http.StatusOK)
+	})
 	handlers := []gin.HandlerFunc{
 		jsonrpc.Controller(client.NewRpcAdapter(c, d)),
 		jsonrpc.WithOTELTracerAttributes(),
