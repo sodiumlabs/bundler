@@ -186,7 +186,6 @@ func (i *Bundler) Process(ep common.Address) (*modules.BatchHandlerCtx, error) {
 		l = l.WithValues(k, v)
 	}
 	l = l.WithValues("duration", time.Since(start))
-	l.Info("bundler run ok")
 	return ctx, nil
 }
 

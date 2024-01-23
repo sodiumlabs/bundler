@@ -148,7 +148,7 @@ func PrivateMode() {
 	b.UseModules(
 		exp.DropExpired(),
 		gasprice.SortByGasPrice(),
-		gasprice.FilterUnderpriced(),
+		// gasprice.FilterUnderpriced(),
 		batch.SortByNonce(),
 		batch.MaintainGasLimit(conf.MaxBatchGasLimit),
 		check.CodeHashes(),

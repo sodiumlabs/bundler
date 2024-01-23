@@ -3,6 +3,7 @@
 package relay
 
 import (
+	"fmt"
 	"math/big"
 	"time"
 
@@ -76,10 +77,14 @@ func (r *Relayer) SendUserOperation() modules.BatchHandlerFunc {
 			GasLimit:    0,
 			WaitTimeout: r.waitTimeout,
 		}
-		r.logger.Info("Sending batch to EntryPoint")
+		// r.logger.Info("Sending batch to EntryPoint", map[string]int{
+		// 	"batch_size": len(ctx.Batch),
+		// })
+		// r.logger.Info(fmt.Sprintf("Sending batch to EntryPoint, batch_size: %d", len(ctx.Batch)))
 		// Estimate gas for handleOps() and drop all userOps that cause unexpected reverts.
 		estRev := []string{}
 		for len(ctx.Batch) > 0 {
+			r.logger.Info(fmt.Sprintf("Sending batch to EntryPoint, batch_size: %d", len(ctx.Batch)))
 			est, revert, err := transaction.EstimateHandleOpsGas(&opts)
 
 			if err != nil {
@@ -102,6 +107,8 @@ func (r *Relayer) SendUserOperation() modules.BatchHandlerFunc {
 			} else {
 				ctx.Data["txn_hash"] = txn.Hash().String()
 			}
+
+			r.logger.Info("Batch sent to EntryPoint", "txn_hash", ctx.Data["txn_hash"])
 		}
 
 		return nil
