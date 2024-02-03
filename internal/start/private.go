@@ -82,7 +82,10 @@ func PrivateMode() {
 	}
 
 	ov := gas.NewDefaultOverhead()
-	if chain.Cmp(config.ArbitrumOneChainID) == 0 || chain.Cmp(config.LumiterraChainID) == 0 || chain.Cmp(config.ArbitrumGoerliChainID) == 0 {
+	if chain.Cmp(config.ArbitrumOneChainID) == 0 ||
+		chain.Cmp(config.LumiterraChainID) == 0 ||
+		chain.Cmp(config.ArbitrumLocalDevChainID) == 0 ||
+		chain.Cmp(config.ArbitrumGoerliChainID) == 0 {
 		ov.SetCalcPreVerificationGasFunc(gas.CalcArbitrumPVGWithEthClient(rpc, conf.SupportedEntryPoints[0]))
 		ov.SetPreVerificationGasBufferFactor(16)
 	}
